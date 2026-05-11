@@ -1,0 +1,10 @@
+[project]
+name = "microgeo"
+version = "0.1.0"
+description = "Geocode Location Service — local microservice over Overpass and Nominatim"
+requires-python = ">=3.11"
+dependencies = [
+    "dnspython==2.8.0",
+    "fastapi==0.136.1",
+    "pymongo==4.17.0",
+]
