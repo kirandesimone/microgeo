@@ -14,6 +14,9 @@ class Settings(BaseSettings):
 
     overpass_url: str = "https://overpass-api.de/api/interpreter"
 
+    # performance budget for User Story #1 (< 3s under normal load)
+    area_query_budget_seconds: float = 3.0
+
 
 def get_settings() -> Settings:
     """Cached settings accessor. Use this as a FastAPI dependency."""
