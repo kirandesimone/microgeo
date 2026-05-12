@@ -14,6 +14,7 @@ class OverpassClient:
         self._settings = settings
         self._http = http_client
 
+
     async def query_bbox(
         self,
         min_lat: float,
@@ -34,8 +35,24 @@ class OverpassClient:
 
         return await self._execute(query)
 
-    async def query_around_point(self, query):
-        pass
+
+    async def query_around_point(
+        self,
+        lat: float,
+        lon: float,
+        radius_m: float,
+        filters: dict[str, str] | None = None,
+    ) -> list[dict[str, Any]]:
+        """Return OSM features withing `radius_m` of point matching `filters`"""
+        query = _build_around_point_query(
+            lat=lat,
+            lon=lon,
+            radius_m=radius_m,
+            filters=filters,
+            timeout_seconds=self._settings.area_query_budget_seconds,
+        )
+
+        return await self._execute(query)
 
 
     async def _execute(self, query: str) -> list[dict[str, Any]]:
@@ -53,7 +70,7 @@ class OverpassClient:
         return self._parse_response(response)
 
 
-    def _parse_response(selfself, response: httpx.Response) -> list[dict[str, Any]]:
+    def _parse_response(self, response: httpx.Response) -> list[dict[str, Any]]:
         """Validate the HTTP response and pull out the features array."""
         if response.status_code == 504:
             raise Exception("Overpass returned a 504 Gateway Timeout")
