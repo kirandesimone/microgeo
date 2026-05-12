@@ -1,13 +1,18 @@
 """
 Thin async client for the Overpass API.
 """
+
 import logging
 from typing import Any
 
 import httpx
 
 from app.core.config import Settings
-from app.utils.overpass_query_builder import build_around_point_query, build_bbox_query
+from app.utils.overpass_query_builder import (
+    build_around_point_query,
+    build_bbox_query,
+)
+
 
 class OverpassClient:
     """Async wrapper around the Overpass QL endpoint.
@@ -21,7 +26,6 @@ class OverpassClient:
     def __init__(self, settings: Settings, http_client: httpx.AsyncClient):
         self._settings = settings
         self._http = http_client
-
 
     async def query_bbox(
         self,
@@ -43,11 +47,10 @@ class OverpassClient:
             max_lat=max_lat,
             max_lon=max_lon,
             filters=filters,
-            timeout_seconds=self._settings.area_query_budget_seconds
+            timeout_seconds=self._settings.area_query_budget_seconds,
         )
 
         return await self._execute(query)
-
 
     async def query_around_point(
         self,
@@ -73,7 +76,6 @@ class OverpassClient:
 
         return await self._execute(query)
 
-
     async def _execute(self, query: str) -> list[dict[str, Any]]:
         """Post a QL query and return the features array"""
 
@@ -83,12 +85,11 @@ class OverpassClient:
                 data={"data": query},
             )
         except httpx.TimeoutException as e:
-            print(f"overpass timeout: {e}")
+            raise Exception(f"Overpass timeout: {e}") from e
         except httpx.RequestError as e:
-            print(f"overpass request error: {e}")
+            raise Exception(f"Overpass request error: {e}") from e
 
         return self._parse_response(response)
-
 
     def _parse_response(self, response: httpx.Response) -> list[dict[str, Any]]:
         """Validate the HTTP response and pull out the features array.
@@ -96,11 +97,20 @@ class OverpassClient:
         HTTP error codes 429 and 504 mean rate-limit and gateway timeout respectively.
         Overpass reports runtime errors via `remark` field but still returns 200."""
 
+        if response.status_code == 400:
+            raise Exception(
+                "Overpass returned a 400 Bad Request: Query syntax error."
+            )
+        if response.status_code == 429:
+            raise Exception(
+                "Overpass returned a 429 Too Many Requests: Rate limit exceeded."
+            )
         if response.status_code == 504:
             raise Exception("Overpass returned a 504 Gateway Timeout")
-        if response.status_code >= 500 or response.status_code == 429:
-            raise Exception(f"Overpass returned HTTP {response.status_code}")
-        # TODO: handle other error codes
+        if response.status_code >= 500:
+            raise Exception(
+                f"Overpass returned HTTP {response.status_code} Server Error."
+            )
 
         # anything non-2xx at this point is an Overpass error
         if not response.is_success:
