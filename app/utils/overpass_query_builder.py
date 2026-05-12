@@ -1,4 +1,21 @@
-"""Overpass QL query builder."""
+"""Overpass QL query builder.
+
+Pure functions for building Overpass QL queries. Kept in own
+module for unit-testing without spinning up an HTTP client or server.
+
+The query shape produced here is::
+
+    [out:json][timeout:N];
+    (
+      node<filter>(<spatial>);
+      way<filter>(<spatial>);
+      relation<filter>(<spatial>);
+    );
+    out geom;
+
+where `<filter>` is the AND of every entry in the filter dict and
+`<spatial>` is either a bbox or an `around` clause.
+"""
 
 
 def build_bbox_query(
