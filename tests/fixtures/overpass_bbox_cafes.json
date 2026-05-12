@@ -1,0 +1,47 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.1 084b4234",
+  "osm3s": {
+    "timestamp_osm_base": "2024-09-15T10:00:00Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org."
+  },
+  "elements": [
+    {
+      "type": "node",
+      "id": 1234567,
+      "lat": 34.0556,
+      "lon": -117.1825,
+      "tags": {
+        "amenity": "cafe",
+        "name": "Augie's Coffee"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1234568,
+      "lat": 34.0561,
+      "lon": -117.1830,
+      "tags": {
+        "amenity": "cafe",
+        "name": "Stell Coffee"
+      }
+    },
+    {
+      "type": "way",
+      "id": 9876543,
+      "nodes": [11, 12, 13, 14, 11],
+      "geometry": [
+        {"lat": 34.0550, "lon": -117.1820},
+        {"lat": 34.0550, "lon": -117.1810},
+        {"lat": 34.0560, "lon": -117.1810},
+        {"lat": 34.0560, "lon": -117.1820},
+        {"lat": 34.0550, "lon": -117.1820}
+      ],
+      "tags": {
+        "amenity": "cafe",
+        "name": "The Coffee Bean",
+        "building": "yes"
+      }
+    }
+  ]
+}

@@ -5,11 +5,11 @@ Local microservice that wraps the public Overpass API (OSM data) and Nominatim (
 ```
 microgeo/
 ├── app/
-│   ├── main.py                  # app factory, lifespan, exception handlers
-│   ├── api/                     # /v1 endpoints (area, point, search)
-│   ├── services/                # Ochestration, async Overpass, async Nominatim
-│   ├── models/                  # request/response models
-│   └── core/                    # Settings via env / .env file, app logics
+│   ├── main.py       # app factory, lifespan, exception handlers
+│   ├── api/          # /v1 endpoints (area, point, search)
+│   ├── services/     # Ochestration, async Overpass, async Nominatim
+│   ├── models/       # request/response models
+│   └── core/         # Settings via env / .env file, app logics
 ├── tests/
 ├── pyproject.toml
 └── .env
