@@ -33,7 +33,7 @@ def _geometry_for(element: dict[str, Any]) -> dict[str, Any] | None:
     if element_type == "node":
         return _node_geometry(element)
     if element_type == "way":
-        return _node_geometry(element)
+        return _way_geometry(element)
     if element_type == "relation":
         return _relation_geometry(element)
     return None
@@ -50,7 +50,21 @@ def _node_geometry(element: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def _way_geometry(element: dict[str, Any]) -> dict[str, Any] | None:
-    pass
+    geom = element.get("geometry")
+    if not geom:
+        return None
+
+    coords = [[pt["lon"], pt["lat"]] for pt in geom if "lat" in pt and "lon" in pt]
+    if len(coords) < 2:
+        # a way with one point is degenerate, treat as no geometry
+        return None
+
+    if _is_closed_way(coords, element.get("tags", {})):
+        # GeoJSON polygon coordinates are a list of linear rings
+        # the outer ring is the first element in the list. Currently not rebuilding inner rings.
+        return {"type": "Polygon", "coordinates": [coords]}
+
+    return {"type": "LineString", "coordinates": coords}
 
 
 def _relation_geometry(element: dict[str, Any]) -> dict[str, Any] | None:
@@ -58,4 +72,31 @@ def _relation_geometry(element: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def _is_closed_way(coords: list[list[float]], tags: dict[str, str]) -> bool:
-    pass
+    """A way is a polygon if its endpoints meet and it's not explicitly linear.
+
+    OSM treats a closed way is a polygon when it represents an area
+        (area=yes, or has a polygon-implying tag like building, landuse, leisure)
+    It's a closed line (not a polygon) when it's something like a closed road
+        (highway=* on a roundabout)
+    """
+
+    if coords[0] != coords[-1]:
+        return False
+    if tags.get("area") == "yes":
+        return True
+
+    # These are most common keys, not complete. Full list is in the OSM wiki
+    area_keys = {
+        "building",
+        "landuse",
+        "leisure",
+        "natural",
+        "amenity",
+        "shop",
+        "tourism",
+        "historic",
+        "place",
+        "boundary",
+    }
+
+    return any(key in tags for key in area_keys)
