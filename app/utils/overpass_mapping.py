@@ -68,7 +68,28 @@ def _way_geometry(element: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def _relation_geometry(element: dict[str, Any]) -> dict[str, Any] | None:
-    pass
+    """GeometryCollection of member geometries"""
+
+    members = element.get("members") or []
+    geometries: list[dict[str, Any]] = []
+    for member in members:
+        # construct a way-shaped dict so we can reuse _way_geometry
+        if member.get("type") == "way" and member.get("geometry"):
+            way_ish = {"type": "way", "geometry": member.get("geometry")}
+
+            geom = _way_geometry(way_ish)
+            if geom:
+                geometries.append(geom)
+
+        elif member.get("type") == "node":
+            geom = _node_geometry(member)
+            if geom:
+                geometries.append(geom)
+
+    if not geometries:
+        return None
+
+    return {"type": "GeometryCollection", "geometries": geometries}
 
 
 def _is_closed_way(coords: list[list[float]], tags: dict[str, str]) -> bool:

@@ -95,8 +95,75 @@ class TestWayMapping:
 
 
 class TestRelationMapping:
-    pass
+    def test_relation_becomes_geometry_collection(self) -> None:
+        element = {
+            "type": "relation",
+            "id": 500,
+            "members": [
+                {
+                    "type": "way",
+                    "ref": 1,
+                    "role": "outer",
+                    "geometry": [
+                        {"lat": 0.0, "lon": 0.0},
+                        {"lat": 1.0, "lon": 1.0}
+                    ]
+                },
+                {
+                    "type": "way",
+                    "ref": 2,
+                    "role": "inner",
+                    "geometry": [
+                        {"lat": 0.2, "lon": 0.2},
+                        {"lat": 0.3, "lon": 0.3}
+                    ]
+                }
+            ],
+            "tags": {"type": "multipolygon"}
+        }
+        feature = map_element(element)
+
+        assert feature.id == "relation/500"
+        assert feature.geometry is not None
+        assert feature.geometry["type"] == "GeometryCollection"
+        assert len(feature.geometry["geometries"]) == 2
+
+
+    def test_relation_with_no_geometric_members_returns_none(self) -> None:
+        element = {
+            "type": "relation",
+            "id": 600,
+            "members": [
+                {"type": "relation", "ref": 999,"role": "child"}
+            ],
+            "tags": {}
+        }
+        feature = map_element(element)
+
+        assert feature.geometry is None
 
 
 class TestMapElements:
-    pass
+
+    def test_empty_input_returns_empty_list(self) -> None:
+        assert map_elements([]) == []
+
+
+    def test_mixed_types_all_pass_through(self) -> None:
+        elements = [
+            {"type": "node", "id": 1, "lat": 0, "lon": 0, "tags": {}},
+            {
+                "type": "way",
+                "id": 2,
+                "geometry": [
+                    {"lat": 0.0, "lon": 0.0},
+                    {"lat": 1.0, "lon": 1.0}
+                ],
+                "tags": {}
+            },
+            {"type": "relation", "id": 3, "members": [], "tags": {}}
+        ]
+        features = map_elements(elements)
+
+        assert [feature.type for feature in features] == ["node", "way", "relation"]
+        assert [feature.id for feature in features] == ["node/1", "way/2", "relation/3"]
