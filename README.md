@@ -31,6 +31,72 @@ GET /v1/features/point?lat=34.0556&lon=-117.1825&filter=amenity=restaurant
 GET /v1/search?q=Oregon+State+University&limit=5
 ```
 
+## UML Diagram
+```mermaid
+classDiagram
+    class Settings{
+        +String app_name
+        +String app_version
+        +String host
+        +Int port
+        +String overpass_url
+        +float area_query_budget_seconds
+        
+        +get_settings() Settings
+    }
+    class OverpassClient{
+        -_settings Settings
+        -_http httpx.AsyncClient
+        +query_bbox(bbox, filters) list[dict[str, Any]]
+        +query_around_point(lat, long, radius_m, filters) list[dict[str, Any]]
+        -_execute(query) list[dict[str, Any]]
+        -_parse_response(resonse) list[dict[str, Any]]
+    }
+    class NominatimClient {
+        
+    }
+    class GeocodeService{
+        -OverpassService _overpass
+        -NominatimService _nominatim
+        +features_in_area(bbox, filters) FeatureCollection
+        -_validate_bbox(bbox)
+    }
+    namespace Utils {
+        class Overpass_Query_Builder["Overpass Query Builder (pure functions)"] {
+            +build_bbox_query(bbox, filters, timeout_seconds) String
+            +build_around_point_query(lat, lon, radius_m, filters, timeout_seconds) String
+            -_timeout_clause(budget_seconds) Int
+            -_format_filters(filters) String
+            -_escape(literal) String
+        }
+    }
+    namespace Models {
+        class BoundingBox {
+            +min_lat float
+            +min_lon float
+            +max_lat float
+            +max_lon float
+        }
+        class OSMFeature {
+            +id String
+            +type String
+            +geometry dict[String, Any]
+            +properties dict[String, Any]
+        }
+        class FeatureCollection {
+            +type String
+            +features list[OSMFeature]
+            +metadata dict[String, Any]
+        }
+    }
+    
+    GeocodeService --> OverpassClient
+    GeocodeService --> NominatimClient
+    GeocodeService --> Overpass_Query_Builder
+    OverpassClient --> Settings
+    NominatimClient --> Settings
+```
+
 
 ## Git Workflow
 
