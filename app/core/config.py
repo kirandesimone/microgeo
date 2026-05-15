@@ -1,5 +1,5 @@
-"""Application configuration
-"""
+"""Application configuration"""
+
 from pydantic_settings import BaseSettings
 
 
@@ -16,6 +16,9 @@ class Settings(BaseSettings):
 
     # performance budget for User Story #1 (< 3s under normal load)
     area_query_budget_seconds: float = 3.0
+
+    # Default timeout for general HTTP requests
+    request_timeout_seconds: float = 10.0
 
 
 def get_settings() -> Settings:
