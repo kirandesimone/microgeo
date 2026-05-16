@@ -7,6 +7,7 @@ The router layer in app.api calls into GeocodeService instead of the clients dir
 import time
 
 from app.models.schema import BoundingBox, FeatureCollection
+from app.services.nominatim_client import NominatimClient
 from app.services.overpass_client import OverpassClient
 from app.utils.overpass_mapping import map_elements
 
@@ -15,10 +16,10 @@ class GeocodeService:
     def __init__(
             self,
             overpass: OverpassClient,
-            # nominatim: None,            # TODO: Replace with a real Nominatim client
+            nominatim: NominatimClient
     ) -> None:
         self._overpass = overpass
-        # self._nominatim = nominatim
+        self._nominatim = nominatim
 
 
     async def features_in_area(

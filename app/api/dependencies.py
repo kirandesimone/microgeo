@@ -13,6 +13,7 @@ from fastapi import Depends, Request
 
 from app.core.config import Settings, get_settings
 from app.services.geocode import GeocodeService
+from app.services.nominatim_client import NominatimClient
 from app.services.overpass_client import OverpassClient
 
 
@@ -35,15 +36,15 @@ def get_overpass_client(
 def get_nominatim_client(
     settings: SettingsDep,
     http_client: Annotated[httpx.AsyncClient, Depends(get_http_client)]
-) -> None:
-    return None
+) -> NominatimClient:
+    return NominatimClient(settings, http_client)
 
 
 def get_geocode_service(
     overpass: Annotated[OverpassClient, Depends(get_overpass_client)],
-    # nominatim: None # swap for `Annotated[NominatimClient, Depends(get_nominatim_client)]` when Nominatim is implemented
+    nominatim: Annotated[NominatimClient, Depends(get_nominatim_client)]
 ) -> GeocodeService:
-    return GeocodeService(overpass)
+    return GeocodeService(overpass, nominatim)
 
 
 GeocodeServiceDep = Annotated[GeocodeService, Depends(get_geocode_service)]
