@@ -53,7 +53,12 @@ classDiagram
         -_parse_response(resonse) list[dict[str, Any]]
     }
     class NominatimClient {
-        
+        -_settings Settings
+        -_http httpx.AsyncClient
+        +search(query) list[dict[String, Any]]
+        +reverse_geocode(lat, lon, zoom) dict[String, Any]
+        -_enforce_limit(limit)
+        -_get_headers() dict[String, String]
     }
     class GeocodeService{
         -OverpassService _overpass
@@ -115,6 +120,11 @@ classDiagram
     OverpassClient --> Settings
     
     NominatimClient --> Settings
+    
+    Dependencies ..> OverpassClient
+    Dependencies ..> NominatimClient
+    Dependencies ..> GeocodeService
+    Dependencies ..> Settings
     
     Overpass_Query_Builder --> OSMFeature
     
