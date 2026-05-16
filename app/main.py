@@ -1,6 +1,7 @@
 """
 FastAPI application factory and entry point.
 """
+from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
 
 import httpx
@@ -8,14 +9,20 @@ from fastapi import FastAPI
 
 from app.core.config import get_settings
 from app.api.status import router as status_router
+from app.api.routes import router as api_router
 
 
+# https://docs.python.org/3/library/contextlib.html#contextlib.asynccontextmanager
+@asynccontextmanager
 async def lifespan(parent_app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
 
     parent_app.state.http_client = httpx.AsyncClient(
-        timeout=settings.request_timeout_seconds
-        # TODO: include User-Agent header when Nominatim is implemented
+        timeout=settings.request_timeout_seconds,
+        headers={
+            "User-Agent": f"{settings.user_agent}",
+            "Accept": "application/json",
+        }
     )
     try:
         yield
@@ -36,6 +43,7 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(status_router)
+    app.include_router(api_router)
 
     return app
 

@@ -83,6 +83,10 @@ class OverpassClient:
             response = await self._http.post(
                 self._settings.overpass_url,
                 data={"data": query},
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                    "Accept": "application/json",
+                }
             )
         except httpx.TimeoutException as e:
             raise Exception(f"Overpass timeout: {e}") from e

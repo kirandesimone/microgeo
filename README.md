@@ -61,6 +61,22 @@ classDiagram
         +features_in_area(bbox, filters) FeatureCollection
         -_validate_bbox(bbox)
     }
+    namespace Api {
+        class Routes {
+            -_parse_filters(raw) dict[String, String]
+            +get_features_in_area(service, bbox, filter) FeatureCollection
+        }
+        class Status {
+            +get_status() dict[String, String]
+            +get_ready() dict[String, String]
+        }
+        class Dependencies {
+            +get_http_client(request) httpx.AsyncClient
+            +get_overpass_client(settings, http_client) OverpassClient
+            +get_nominatim_client(settings, http_client) NominatimClient
+            +get_geocode_service(overpass, nominatim) GeocodeService
+        }
+    }
     namespace Utils {
         class Overpass_Query_Builder["Overpass Query Builder (pure functions)"] {
             +build_bbox_query(bbox, filters, timeout_seconds) String
@@ -90,11 +106,20 @@ classDiagram
         }
     }
     
+    GeocodeService --> BoundingBox
+    GeocodeService --> FeatureCollection
     GeocodeService --> OverpassClient
     GeocodeService --> NominatimClient
     GeocodeService --> Overpass_Query_Builder
+    
     OverpassClient --> Settings
+    
     NominatimClient --> Settings
+    
+    Overpass_Query_Builder --> OSMFeature
+    
+    Routes --> Dependencies
+    Routes --> GeocodeService
 ```
 
 
