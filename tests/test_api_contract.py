@@ -3,6 +3,8 @@
 These don't call the API endpoints, but just check the framework is
 wired correctly: routs mount, query validation runs, and error responses
 are correct.
+
+https://fastapi.tiangolo.com/tutorial/testing/
 """
 
 import pytest
@@ -31,3 +33,12 @@ def test_ready_returns_200(client: TestClient) -> None:
 
     assert result.status_code == 200
 
+
+def test_area_endpoint_validates_bbox(client: TestClient) -> None:
+    # min_lat out of range -> from query validation
+    result = client.get(
+        "/v1/features/area",
+        params={"min_lat": -200, "min_lon": 0, "max_lat": 1, "max_lon": 1}
+    )
+
+    assert result.status_code == 422

@@ -15,10 +15,10 @@ class GeocodeService:
     def __init__(
             self,
             overpass: OverpassClient,
-            nominatim: None,            # TODO: Replace with a real Nominatim client
+            # nominatim: None,            # TODO: Replace with a real Nominatim client
     ) -> None:
         self._overpass = overpass
-        self._nominatim = nominatim
+        # self._nominatim = nominatim
 
 
     async def features_in_area(
