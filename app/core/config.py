@@ -14,10 +14,9 @@ class Settings(BaseSettings):
 
     # APIs
     overpass_url: str = "https://overpass-api.de/api/interpreter"
-
-    # Nominatim config
     nominatim_url: str = "https://nominatim.openstreetmap.org"
 
+    # Required User-Agent header
     @property
     def user_agent(self) -> str:
         """Construct the user agent string."""
@@ -28,9 +27,6 @@ class Settings(BaseSettings):
     # Default timeout for general HTTP requests
     request_timeout_seconds: float = 10.0
     max_retries: int = 3
-
-    # Required User-Agent header
-    user_agent: str = f"{app_name}/{app_version} (contact: nops@exaple.com)"
 
 
 def get_settings() -> Settings:
