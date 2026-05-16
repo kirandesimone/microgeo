@@ -15,9 +15,16 @@ class Settings(BaseSettings):
     # APIs
     overpass_url: str = "https://overpass-api.de/api/interpreter"
 
-    # performance budget for User Story #1 (< 3s under normal load)
-    area_query_budget_seconds: float = 3.0
+    # Nominatim config
+    nominatim_url: str = "https://nominatim.openstreetmap.org"
 
+    @property
+    def user_agent(self) -> str:
+        """Construct the user agent string."""
+        return f"microgeo-service/{self.app_version} (internal-dev)"
+
+    # Performance budget for User Story #1 (< 3s under normal load)
+    area_query_budget_seconds: float = 3.0
     # Default timeout for general HTTP requests
     request_timeout_seconds: float = 10.0
     max_retries: int = 3
