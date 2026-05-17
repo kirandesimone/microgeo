@@ -10,22 +10,20 @@ from app.models.schema import BoundingBox, FeatureCollection
 from app.services.nominatim_client import NominatimClient
 from app.services.overpass_client import OverpassClient
 from app.utils.overpass_mapping import map_elements
+from app.utils.nominatim_mapping import map_nominatim_results
 
 
 class GeocodeService:
     def __init__(
-            self,
-            overpass: OverpassClient,
-            nominatim: NominatimClient
+        self, overpass: OverpassClient, nominatim: NominatimClient
     ) -> None:
         self._overpass = overpass
         self._nominatim = nominatim
 
-
     async def features_in_area(
-            self,
-            bbox: BoundingBox,
-            filters: dict[str, str],
+        self,
+        bbox: BoundingBox,
+        filters: dict[str, str],
     ) -> FeatureCollection:
         """Return OSM features matching filters inside a BoundingBox.
 
@@ -53,10 +51,9 @@ class GeocodeService:
                 "bbox": [bbox.min_lat, bbox.min_lon, bbox.max_lat, bbox.max_lon],
                 "filters": filters,
                 "count": len(features),
-                "elapsed_ms": elapsed_ms
-            }
+                "elapsed_ms": elapsed_ms,
+            },
         )
-
 
     @staticmethod
     def _validate_bbox(bbox: BoundingBox):
@@ -70,3 +67,32 @@ class GeocodeService:
             raise ValueError(
                 f"min_lon ({bbox.min_lon}) must be less than max_lon ({bbox.max_lon}):"
             )
+
+    async def search(
+        self,
+        query: str,
+        limit: int = 5,
+        countryCodes: list[str] | None = None,
+    ) -> FeatureCollection:
+        """
+        Search for a location by name or address.
+
+        Parameters:
+          query - Search string to look up.
+          limit - Max number of results to return.
+          countryCodes - Optional list of country codes for filtering.
+        Returns: List of OSM feature dictionaries.
+        """
+        started = time.monotonic()
+        results = await self._nominatim.search(query, limit, countryCodes)
+        features = map_nominatim_results(results)
+        elapsedMs = int((time.monotonic() - started) * 1000)
+
+        return FeatureCollection(
+            features=features,
+            metadata={
+                "query": query,
+                "count": len(features),
+                "elapsed_ms": elapsedMs,
+            },
+        )

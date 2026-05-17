@@ -6,16 +6,13 @@ GET /v1/features/area - features inside a bounding box
 
 https://fastapi.tiangolo.com/reference/apirouter/
 """
+
 from typing import Annotated
 
 from fastapi import APIRouter, Query, status
 
 from app.api.dependencies import GeocodeServiceDep
-from app.models.schema import (
-    BoundingBox,
-    FeatureCollection
-)
-
+from app.models.schema import BoundingBox, FeatureCollection
 
 router = APIRouter(prefix="/v1", tags=["geocode"])
 
@@ -23,7 +20,7 @@ router = APIRouter(prefix="/v1", tags=["geocode"])
 def _parse_filters(raw: list[str] | None) -> dict[str, str]:
     """Parse filter=key=value repeated query params into a dict
 
-        Example: <...>?filter=amenity=cafe&filter=cuisine=italian -> {"amenity": "cafe", "cuisine": "italian"}
+    Example: <...>?filter=amenity=cafe&filter=cuisine=italian -> {"amenity": "cafe", "cuisine": "italian"}
     """
     parsed: dict[str, str] = {}
     if not raw:
@@ -43,18 +40,18 @@ def _parse_filters(raw: list[str] | None) -> dict[str, str]:
     "/features/area",
     response_model=FeatureCollection,
     status_code=status.HTTP_200_OK,
-    summary="Get OSM features inside a bounding box"
+    summary="Get OSM features inside a bounding box",
 )
 async def get_features_in_area(
-        service: GeocodeServiceDep,
-        min_lat: Annotated[float, Query(ge=-90, le=90, description="Southern edge")],
-        min_lon: Annotated[float, Query(ge=-180, le=180, description="Western edge")],
-        max_lat: Annotated[float, Query(ge=-90, le=90, description="Northern edge")],
-        max_lon: Annotated[float, Query(ge=-180, le=180, description="Eastern edge")],
-        filter: Annotated[
-            list[str] | None,
-            Query(description="OSM tag filter, repeatable. Format: key=value"),
-        ] = None,
+    service: GeocodeServiceDep,
+    min_lat: Annotated[float, Query(ge=-90, le=90, description="Southern edge")],
+    min_lon: Annotated[float, Query(ge=-180, le=180, description="Western edge")],
+    max_lat: Annotated[float, Query(ge=-90, le=90, description="Northern edge")],
+    max_lon: Annotated[float, Query(ge=-180, le=180, description="Eastern edge")],
+    filter: Annotated[
+        list[str] | None,
+        Query(description="OSM tag filter, repeatable. Format: key=value"),
+    ] = None,
 ) -> FeatureCollection:
     """Return OSM features inside a bounding box that match filter."""
     bbox = BoundingBox(
@@ -62,3 +59,32 @@ async def get_features_in_area(
     )
 
     return await service.features_in_area(bbox, _parse_filters(filter))
+
+
+@router.get(
+    "/search",
+    response_model=FeatureCollection,
+    status_code=status.HTTP_200_OK,
+    summary="Search for a location by name or address",
+)
+async def search_location(
+    service: GeocodeServiceDep,
+    q: Annotated[str, Query(description="Search string")],
+    limit: Annotated[int, Query(ge=1, le=50)] = 5,
+    country: Annotated[
+        list[str] | None,
+        Query(description="ISO 3166-1 alpha-2 country code filter"),
+    ] = None,
+) -> FeatureCollection:
+    """
+    Search for a location by name, category, or address.
+
+    Parameters:
+      service - The geocode service dependency.
+      q - The search query string.
+      limit - Maximum number of results.
+      country - List of country codes to filter by.
+    Returns:
+      A FeatureCollection of matching locations.
+    """
+    return await service.search(q, limit, country)
