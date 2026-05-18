@@ -185,6 +185,100 @@ classDiagram
     Routes --> GeocodeService
 ```
 
+## Sequence Diagram
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client
+    participant FastAPI as FastAPI (main.py)
+    participant Routes as Routes (api/routes.py)
+    participant Deps as Dependencies (api/dependencies.py)
+    participant Service as GeocodeService
+    participant Overpass as OverpassClient
+    participant Nominatim as NominatimClient
+    participant QB as OverpassQueryBuilder
+    participant Map as Mappers (overpass/nominatim_mapping)
+    participant HTTP as httpx.AsyncClient
+    participant OverpassAPI as Overpass API
+    participant NominatimAPI as Nominatim API
+    Note over FastAPI,HTTP: Startup — lifespan creates a shared httpx.AsyncClient on app.state
+    %% --- /v1/features/area ---
+    Note over Client,OverpassAPI: GET /v1/features/area?min_lat=&min_lon=&max_lat=&max_lon=&filter=key=value
+    Client->>FastAPI: HTTP GET /v1/features/area
+    FastAPI->>Routes: dispatch get_features_in_area(...)
+    Routes->>Deps: resolve GeocodeServiceDep
+    Deps->>Deps: get_settings(), get_http_client()
+    Deps->>Overpass: new OverpassClient(settings, http)
+    Deps->>Nominatim: new NominatimClient(settings, http)
+    Deps->>Service: new GeocodeService(overpass, nominatim)
+    Routes->>Routes: _parse_filters(filter) -> dict
+    Routes->>Service: features_in_area(bbox, filters)
+    Service->>Service: _validate_bbox(bbox)
+    Service->>Overpass: query_bbox(min/max lat/lon, filters)
+    Overpass->>QB: build_bbox_query(bbox, filters, timeout)
+    QB-->>Overpass: Overpass QL string
+    Overpass->>HTTP: POST overpass_url (data=query)
+    HTTP->>OverpassAPI: POST /interpreter
+    OverpassAPI-->>HTTP: 200 JSON {elements:[...]}
+    HTTP-->>Overpass: Response
+    Overpass->>Overpass: _parse_response(response)
+    Overpass-->>Service: list[OSM element dicts]
+    Service->>Map: map_elements(elements)
+    Map-->>Service: list[OSMFeature]
+    Service-->>Routes: FeatureCollection(features, metadata)
+    Routes-->>FastAPI: FeatureCollection
+    FastAPI-->>Client: 200 OK JSON
+    %% --- /v1/features/point ---
+    Note over Client,OverpassAPI: GET /v1/features/point?lat=&lon=&radius=&filter=key=value
+    Client->>FastAPI: HTTP GET /v1/features/point
+    FastAPI->>Routes: dispatch get_features_at_point(...)
+    Routes->>Deps: resolve GeocodeServiceDep
+    Deps-->>Routes: GeocodeService (shared http client)
+    Routes->>Service: features_at_point(point, radius, filters)
+    Service->>Overpass: query_around_point(lat, lon, radius_m, filters)
+    Overpass->>QB: build_around_point_query(...)
+    QB-->>Overpass: Overpass QL string
+    Overpass->>HTTP: POST overpass_url (data=query)
+    HTTP->>OverpassAPI: POST /interpreter
+    OverpassAPI-->>HTTP: 200 JSON {elements:[...]}
+    HTTP-->>Overpass: Response
+    Overpass-->>Service: list[elements]
+    Service->>Map: map_elements(elements)
+    Map-->>Service: list[OSMFeature]
+    Service-->>Routes: FeatureCollection
+    Routes-->>FastAPI: FeatureCollection
+    FastAPI-->>Client: 200 OK JSON
+    %% --- /v1/search ---
+    Note over Client,NominatimAPI: GET /v1/search?q=&limit=&country=
+    Client->>FastAPI: HTTP GET /v1/search
+    FastAPI->>Routes: dispatch search_location(...)
+    Routes->>Deps: resolve GeocodeServiceDep
+    Deps-->>Routes: GeocodeService
+    Routes->>Service: search(q, limit, country)
+    Service->>Nominatim: search(query, limit, countryCodes)
+    Nominatim->>Nominatim: _enforce_rate_limit() (1 req/s)
+    Nominatim->>Nominatim: _get_headers() (User-Agent)
+    Nominatim->>HTTP: GET nominatim_url/search?q=...
+    HTTP->>NominatimAPI: GET /search
+    NominatimAPI-->>HTTP: 200 JSON [...]
+    HTTP-->>Nominatim: Response
+    Nominatim-->>Service: list[nominatim result dicts]
+    Service->>Map: map_nominatim_results(results)
+    Map-->>Service: list[OSMFeature]
+    Service-->>Routes: FeatureCollection
+    Routes-->>FastAPI: FeatureCollection
+    FastAPI-->>Client: 200 OK JSON
+    %% --- Error path (illustrative) ---
+    Note over Overpass,OverpassAPI: Error path — Overpass returns 429/504/5xx or httpx raises
+    Overpass->>HTTP: POST overpass_url
+    HTTP-->>Overpass: 429 / 504 / 5xx or TimeoutException
+    Overpass-->>Service: raises Exception
+    Service-->>FastAPI: propagates exception
+    FastAPI-->>Client: HTTP 500 (via FastAPI default handler)
+    Note over FastAPI,HTTP: Shutdown — lifespan closes the shared httpx.AsyncClient
+ ```
+
+
 
 ## Git Workflow
 
