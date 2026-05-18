@@ -31,6 +31,59 @@ GET /v1/features/point?lat=34.0556&lon=-117.1825&filter=amenity=restaurant
 GET /v1/search?q=Oregon+State+University&limit=5
 ```
 
+## How to Request Data
+To request data, use an HTTP GET request to the target endpoint with necessary query parameters.
+
+Available Endpoints:
+``` 
+GET /v1/search
+GET /v1/features/area
+```
+
+Example Calls:
+``` python
+import requests
+
+BASE_URL = "http://localhost:8000"
+
+# Example 1: Requesting a location search
+search_params = {
+    "q": "Corvallis, Oregon",
+    "limit": 1,
+    "country": ["us"]
+}
+search_response = requests.get(f"{BASE_URL}/v1/search", params=search_params)
+
+# Example 2: Requesting features in a bounding box
+bbox_params = {
+    "min_lat": 44.550,
+    "min_lon": -123.290,
+    "max_lat": 44.580,
+    "max_lon": -123.250,
+    "filter": ["amenity=cafe", "cuisine=coffee_shop"]
+}
+bbox_response = requests.get(f"{BASE_URL}/v1/features/area", params=bbox_params)
+```
+
+## How to Receive Data
+The microgeo service response with a JSON payload. To process the data, the JSON response must be deserialized and then iterate through the features array.
+
+Example Receive and Process:
+
+``` python
+if search_response.status_code == 200:
+    data = search_response.json()
+    
+    # The 'features' list contains the geographic data
+    features = data.get("features", [])
+    for feature in features:
+        coordinates = feature["geometry"]["coordinates"] # [longitude, latitude]
+        properties = feature["properties"]
+        print(f"Found: {properties.get('display_name')} at {coordinates}")
+else:
+    print(f"Error: {search_response.status_code} - {search_response.text}")
+```
+
 ## UML Diagram
 ```mermaid
 classDiagram
