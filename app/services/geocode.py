@@ -6,7 +6,7 @@ The router layer in app.api calls into GeocodeService instead of the clients dir
 
 import time
 
-from app.models.schema import BoundingBox, FeatureCollection
+from app.models.schema import BoundingBox, FeatureCollection, Point
 from app.services.nominatim_client import NominatimClient
 from app.services.overpass_client import OverpassClient
 from app.utils.overpass_mapping import map_elements
@@ -67,6 +67,35 @@ class GeocodeService:
             raise ValueError(
                 f"min_lon ({bbox.min_lon}) must be less than max_lon ({bbox.max_lon}):"
             )
+    
+    async def features_at_point(
+        self,
+        point: Point,
+        radius_m: float,
+        filters: dict[str, str],
+    ) -> FeatureCollection:
+        """Return OSM features within radius_m of a point matching filters."""
+
+        started = time.monotonic()
+        elements = await self._overpass.query_around_point(
+            lat=point.lat,
+            lon=point.lon,
+            radius_m=radius_m,
+            filters=filters or None,
+        )
+        features = map_elements(elements)
+        elapsed_ms = int((time.monotonic() - started) * 1000)
+
+        return FeatureCollection(
+            features=features,
+            metadata={
+                "point": [point.lat, point.lon],
+                "radius_m": radius_m,
+                "filters": filters,
+                "count": len(features),
+                "elapsed_ms": elapsed_ms,
+            },
+        )
 
     async def search(
         self,

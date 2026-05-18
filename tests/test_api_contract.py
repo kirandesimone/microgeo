@@ -42,3 +42,15 @@ def test_area_endpoint_validates_bbox(client: TestClient) -> None:
     )
 
     assert result.status_code == 422
+
+
+def test_point_endpoint_requires_coords(client: TestClient) -> None:
+    result = client.get("/v1/features/point")
+
+    assert result.status_code == 422
+
+
+def test_search_endpoint_requires_query(client: TestClient) -> None:
+    r = client.get("/v1/search")
+
+    assert r.status_code == 422

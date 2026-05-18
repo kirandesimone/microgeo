@@ -12,7 +12,7 @@ from typing import Annotated
 from fastapi import APIRouter, Query, status
 
 from app.api.dependencies import GeocodeServiceDep
-from app.models.schema import BoundingBox, FeatureCollection
+from app.models.schema import BoundingBox, FeatureCollection, Point
 
 router = APIRouter(prefix="/v1", tags=["geocode"])
 
@@ -59,6 +59,26 @@ async def get_features_in_area(
     )
 
     return await service.features_in_area(bbox, _parse_filters(filter))
+
+@router.get(
+    "/features/point",
+    response_model=FeatureCollection,
+    status_code=status.HTTP_200_OK,
+    summary="Get OSM features near a lat/lon point",
+)
+async def get_features_at_point(
+    service: GeocodeServiceDep,
+    lat: Annotated[float, Query(ge=-90, le=90, description="Latitude of the point")],
+    lon: Annotated[float, Query(ge=-180, le=180, description="Longitude of the point")],
+    radius: Annotated[float, Query(gt=0, description="Search radius in meters")] = 100.0,
+    filter: Annotated[
+        list[str] | None,
+        Query(description="OSM tag filter, repeatable. Format: key=value"),
+    ] = None,
+) -> FeatureCollection:
+    """Return OSM features within radius meters of a point matching filters."""
+    point = Point(lat=lat, lon=lon)
+    return await service.features_at_point(point, radius, _parse_filters(filter))
 
 
 @router.get(
