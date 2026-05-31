@@ -17,71 +17,122 @@ microgeo/
 
 ## Public API
 
-| User Story             | Method | Path               | Purpose                                      |
-|------------------------|--------|--------------------|----------------------------------------------|
-| 1. Specify an Area     | GET    | /v1/features/area  | OSM features inside a bounding box           |
-| 2. Select a Location   | GET    | /v1/features/point | OSM features at a specific lat/lon           |
-| 3. Search for Location | GET    | /v1/search         | Forward-geocode a name, address, or category |
-|                        | GET    | /v1/status         | Returns status of the service                |
+The microservice exposes the following endpoints using standard HTTP `GET` requests.
 
-OSM tag filters are pass as repeated `filter=key=value` query parameters:
-```http request
-GET /v1/features/area?min_lat=34.0&min_lon=-117.2&max_lat=34.1&max_lon=-117.1&filter=amenity=cafe
-GET /v1/features/point?lat=34.0556&lon=-117.1825&filter=amenity=restaurant
-GET /v1/search?q=Oregon+State+University&limit=5
+| User Story             | Method | Path                 | Purpose                                                                                      |
+|------------------------|--------|----------------------|----------------------------------------------------------------------------------------------|
+| 1. Specify an Area     | `GET`  | `/v1/features/area`  | Fetch OSM features inside a [Bounding Box](https://wiki.openstreetmap.org/wiki/Bounding_Box) |
+| 2. Select a Location   | `GET`  | `/v1/features/point` | Fetch OSM features within a radius of a specific latitude/longitude                          |
+| 3. Search for Location | `GET`  | `/v1/search`         | Forward-geocode (search) a name, address, or category                                        |
+| Service Health         | `GET`  | `/v1/status`         | Returns the operational status of the service                                                |
+
+---
+
+### Requesting Data 
+
+Data is requested using https://en.wikipedia.org/wiki/Query_string(https://en.wikipedia.org/wiki/Query_string). OSM tag filters are passed as repeated `filter=key=value` strings.
+
+#### 1. Features in an Area (`GET /v1/features/area`)
+Fetches map features within a rectangular boundary.
+* **Request Parameters:**
+    * `min_lat`, `max_lat` (float): Southern and Northern latitude edges.
+    * `min_lon`, `max_lon` (float): Western and Eastern longitude edges.
+    * `filter` (string, optional, repeatable): Tag filters like `amenity=cafe`.
+
+#### 2. Features at a Point (`GET /v1/features/point`)
+Fetches map features within a circular radius.
+* **Request Parameters:**
+    * `lat`, `lon` (float): Center point coordinates.
+    * `radius` (float, optional): Search radius in meters (defaults to 100.0).
+    * `filter` (string, optional, repeatable): Tag filters.
+
+#### 3. Search Location (`GET /v1/search`)
+Converts a human-readable location name into coordinates and feature data.
+* **Request Parameters:**
+    * `q` (string): The search query (e.g., "Corvallis, Oregon").
+    * `limit` (int, optional): Max results to return (defaults to 5).
+    * `country` (string, optional, repeatable): [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) country code.
+
+---
+
+### Response Data Format
+
+The service responds with a [GeoJSON](https://geojson.org/)-style `FeatureCollection` payload containing an array of features.
+
+**Example JSON Response:**
+```json
+{
+  "type": "FeatureCollection",
+  "metadata": {},
+  "features": [
+    {
+      "id": "node/123456789",
+      "type": "node",
+      "geometry": {
+        "coordinates": [-123.282, 44.563]
+      },
+      "properties": {
+        "name": "Coffee Shop",
+        "amenity": "cafe"
+      }
+    }
+  ]
+}
 ```
+* **`features`**: An array where each item represents a physical location or structure.
+* **`geometry`**: Contains the spatial data (e.g., longitude/latitude coordinates).
+* **`properties`**: A dictionary containing descriptive tags (like name, amenity type, or address).
 
-## How to Request Data
-To request data, use an HTTP GET request to the target endpoint with necessary query parameters.
+---
 
-Available Endpoints:
-``` 
-GET /v1/search
-GET /v1/features/area
-```
+## Example Code
 
-Example Calls:
-``` python
+Below is a Python snippet using the `requests` library to interact with the API. It demonstrates how to build the request parameters, execute the HTTP GET call, and parse the resulting JSON data.
+
+```python
 import requests
 
 BASE_URL = "http://localhost:8000"
 
-# Example 1: Requesting a location search
+# --- Example 1: Requesting a location search ---
+# We package our URL queries into a dictionary. 
 search_params = {
     "q": "Corvallis, Oregon",
     "limit": 1,
     "country": ["us"]
 }
+
+# This sends a GET request to http://localhost:8000/v1/search?q=Corvallis,+Oregon&limit=1&country=us
 search_response = requests.get(f"{BASE_URL}/v1/search", params=search_params)
 
-# Example 2: Requesting features in a bounding box
+# Check if the HTTP request was successful (200 OK)
+if search_response.status_code == 200:
+    data = search_response.json() # Deserialize the JSON string into a Python dictionary
+    
+    # Iterate through the returned features array
+    for feature in data.get("features", []):
+        coords = feature["geometry"]["coordinates"] # Extracts [longitude, latitude]
+        name = feature["properties"].get("display_name", "Unknown")
+        print(f"Found: {name} at {coords}")
+else:
+    print(f"Error: {search_response.status_code} - {search_response.text}")
+
+
+# --- Example 2: Requesting features in a bounding box ---
+# Here, we pass multiple filters by using a list for the 'filter' key.
 bbox_params = {
     "min_lat": 44.550,
     "min_lon": -123.290,
     "max_lat": 44.580,
     "max_lon": -123.250,
-    "filter": ["amenity=cafe", "cuisine=coffee_shop"]
+    "filter": ["amenity=cafe", "cuisine=coffee_shop"] 
 }
+
 bbox_response = requests.get(f"{BASE_URL}/v1/features/area", params=bbox_params)
-```
 
-## How to Receive Data
-The microgeo service response with a JSON payload. To process the data, the JSON response must be deserialized and then iterate through the features array.
-
-Example Receive and Process:
-
-``` python
-if search_response.status_code == 200:
-    data = search_response.json()
-    
-    # The 'features' list contains the geographic data
-    features = data.get("features", [])
-    for feature in features:
-        coordinates = feature["geometry"]["coordinates"] # [longitude, latitude]
-        properties = feature["properties"]
-        print(f"Found: {properties.get('display_name')} at {coordinates}")
-else:
-    print(f"Error: {search_response.status_code} - {search_response.text}")
+if bbox_response.status_code == 200:
+    cafe_data = bbox_response.json()
+    print(f"Found {len(cafe_data.get('features', []))} cafes in the area.")
 ```
 
 ## UML Diagram
