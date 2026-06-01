@@ -98,13 +98,5 @@ async def search_location(
 ) -> FeatureCollection:
     """
     Search for a location by name, category, or address.
-
-    Parameters:
-      service - The geocode service dependency.
-      q - The search query string.
-      limit - Maximum number of results.
-      country - List of country codes to filter by.
-    Returns:
-      A FeatureCollection of matching locations.
     """
     return await service.search(q, limit, country)
