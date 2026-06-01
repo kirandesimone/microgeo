@@ -17,31 +17,30 @@ where `<filter>` is the AND of every entry in the filter dict and
 `<spatial>` is either a bbox or an `around` clause.
 """
 
+from app.models.schema import BoundingBox
+
 
 def build_bbox_query(
-    min_lat: float,
-    min_lon: float,
-    max_lat: float,
-    max_lon: float,
+    bbox: BoundingBox,
     filters: dict[str, str] | None,
     timeout_seconds: float
 ) -> str:
-    """Build a query string from a query dict.
+    """Build a query string for features inside a BoundingBox.
 
      [out:json][timeout:N];
      <filter clauses>(bbox);
      out geom;
     """
     tags = _format_filters(filters)
-    bbox = f"{min_lat},{min_lon},{max_lat},{max_lon}"
+    spatial = f"{bbox.min_lat},{bbox.min_lon},{bbox.max_lat},{bbox.max_lon}"
     timeout = _timeout_clause(timeout_seconds)
 
     return (
         f"[out:json][timeout:{timeout}];"
         f"("
-        f"node{tags}({bbox});"
-        f"way{tags}({bbox});"
-        f"relation{tags}({bbox});"
+        f"node{tags}({spatial});"
+        f"way{tags}({spatial});"
+        f"relation{tags}({spatial});"
         f");"
         "out geom;"
     )

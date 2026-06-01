@@ -8,6 +8,7 @@ from typing import Any
 import httpx
 
 from app.core.config import Settings
+from app.models.schema import BoundingBox
 from app.utils.overpass_query_builder import (
     build_around_point_query,
     build_bbox_query,
@@ -41,11 +42,14 @@ class OverpassClient:
         :param filters: dict of tag filters, e.g. {"amenity": "cafe"}
         :returns: list of OSM features, empty list if no features found"""
 
-        query = build_bbox_query(
+        bbox = BoundingBox(
             min_lat=min_lat,
             min_lon=min_lon,
             max_lat=max_lat,
             max_lon=max_lon,
+        )
+        query = build_bbox_query(
+            bbox=bbox,
             filters=filters,
             timeout_seconds=self._settings.area_query_budget_seconds,
         )

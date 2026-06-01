@@ -1,4 +1,5 @@
 
+from app.models.schema import BoundingBox
 from app.utils.overpass_query_builder import (
     build_bbox_query,
     build_around_point_query,
@@ -40,10 +41,12 @@ class TestFormatFilters:
 class TestBuildBboxQuery:
     def test_basic_shape(self) -> None:
         test_query = build_bbox_query(
-            min_lat=34.0,
-            min_lon=-117.2,
-            max_lat=34.1,
-            max_lon=-117.1,
+            bbox=BoundingBox(
+                min_lat=34.0,
+                min_lon=-117.2,
+                max_lat=34.1,
+                max_lon=-117.1,
+            ),
             filters={"amenity": "cafe"},
             timeout_seconds=3.0,
         )
