@@ -61,11 +61,11 @@ class GeocodeService:
 
         if bbox.min_lat >= bbox.max_lat:
             raise ValueError(
-                f"min_lat ({bbox.min_lat}) must be less than max_lat ({bbox.max_lat}):"
+                f"min_lat ({bbox.min_lat}) must be less than max_lat ({bbox.max_lat})"
             )
         if bbox.min_lon >= bbox.max_lon:
             raise ValueError(
-                f"min_lon ({bbox.min_lon}) must be less than max_lon ({bbox.max_lon}):"
+                f"min_lon ({bbox.min_lon}) must be less than max_lon ({bbox.max_lon})"
             )
     
     async def features_at_point(

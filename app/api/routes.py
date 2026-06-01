@@ -20,7 +20,8 @@ router = APIRouter(prefix="/v1", tags=["geocode"])
 def _parse_filters(raw: list[str] | None) -> dict[str, str]:
     """Parse filter=key=value repeated query params into a dict
 
-    Example: <...>?filter=amenity=cafe&filter=cuisine=italian -> {"amenity": "cafe", "cuisine": "italian"}
+    Example: <...>?filter=amenity=cafe&filter=cuisine=italian
+        -> {"amenity": "cafe", "cuisine": "italian"}
     """
     parsed: dict[str, str] = {}
     if not raw:
