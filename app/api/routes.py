@@ -20,7 +20,8 @@ router = APIRouter(prefix="/v1", tags=["geocode"])
 def _parse_filters(raw: list[str] | None) -> dict[str, str]:
     """Parse filter=key=value repeated query params into a dict
 
-    Example: <...>?filter=amenity=cafe&filter=cuisine=italian -> {"amenity": "cafe", "cuisine": "italian"}
+    Example: <...>?filter=amenity=cafe&filter=cuisine=italian
+        -> {"amenity": "cafe", "cuisine": "italian"}
     """
     parsed: dict[str, str] = {}
     if not raw:
@@ -98,13 +99,5 @@ async def search_location(
 ) -> FeatureCollection:
     """
     Search for a location by name, category, or address.
-
-    Parameters:
-      service - The geocode service dependency.
-      q - The search query string.
-      limit - Maximum number of results.
-      country - List of country codes to filter by.
-    Returns:
-      A FeatureCollection of matching locations.
     """
     return await service.search(q, limit, country)
